@@ -1,0 +1,138 @@
+version: "3.8"
+
+services:
+  server_db:
+    container_name: PROD-slate-server-db
+    image: postgres:14.1-alpine
+    env_file:
+      - ./.env
+    ports:
+      - "${HOST_PORT}:${DB_PORT}"
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: "${DB_NAME}"
+    volumes:
+      - slate_cbt_db_volume:/var/lib/postgresql/data
+    networks:
+      - cbt_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: PROD-slate-redis
+    restart: always
+    ports:
+      - "${REDIS_EXT_PORT}:${REDIS_PORT}"
+    command: redis-server --requirepass "${REDIS_PASSWORD}"
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - cbt_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: docker.io/mceazy2700/slate-cbt-backend:1.0.6
+    container_name: PROD-slate-server-api
+    env_file:
+      - ./.env
+    ports:
+      - "${BACKEND_PORT}:${CONTAINER_PORT}"
+    volumes:
+      - ./static:/backend/src/resources/static
+      - ./media:/backend/src/resources/media
+    restart: always
+    stdin_open: true
+    tty: true
+    depends_on:
+      server_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cbt_network
+
+  frontend_app:
+    image: docker.io/mceazy2700/slate-cbt-app:1.0.3
+    container_name: PROD-slate-frontend-app
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "2800:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - cbt_network
+
+  frontend_admin:
+    image: docker.io/mceazy2700/slate-cbt-admin:1.0.5
+    container_name: PROD-slate-frontend-admin
+    restart: always
+    env_file:
+      - ./.env
+    ports:
+      - "2900:3000"
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - cbt_network
+
+  celery:
+    image: docker.io/mceazy2700/slate-cbt-backend:1.0.6
+    container_name: PROD-slate-celery
+    command: celery -A src.core worker --loglevel=INFO --concurrency=${CELERY_CONCURRENCY:-4} -E -B
+    volumes:
+      - ./media:/backend/src/resources/media
+      - celery_data:/backend/data
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    networks:
+      - cbt_network
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: PROD-slate-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+      - ./nginx/snippets:/etc/nginx/snippets
+    depends_on:
+      frontend_admin:
+        condition: service_started
+    networks:
+      - cbt_network
+
+networks:
+  cbt_network:
+    driver: bridge
+
+volumes:
+  slate_cbt_db_volume:
+    driver: local
+  redis_data:
+    driver: local
+  celery_data:
+    driver: local

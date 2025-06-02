@@ -1,0 +1,103 @@
+name: Bundle CBT Application
+
+# Manually triggered workflow
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Bundle CBT Application'
+        required: false
+        default: 'latest'
+        type: string
+
+jobs:
+  bundle-application:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout main repository
+      uses: actions/checkout@v4
+      with:
+        path: main-repo
+    
+    # Clone each component repository using git directly with tokens
+    - name: Clone CBT-Admin Repository
+      run: |
+        git clone https://Gbiterium:${{ secrets.CBT_ADMIN_TOKEN }}@github.com/Gbiterium/CBT-Admin.git cbt_admin
+    
+    - name: Clone CBT-App Repository
+      run: |
+        git clone https://Gbiterium:${{ secrets.CBT_APP_TOKEN }}@github.com/Gbiterium/CBT-App.git cbt_app
+    
+    - name: Clone Slate-Local-Server Repository
+      run: |
+        git clone https://McEazy2700:${{ secrets.CBT_BACKEND_TOKEN }}@github.com/alexazuike/Slate-Local-Server.git cbt_backend
+    
+    - name: Create Bundle Structure
+      run: |
+        mkdir -p bundle/app
+        
+        # Copy components to bundle directory
+        cp -r cbt_admin bundle/app/
+        cp -r cbt_app bundle/app/
+        cp -r cbt_backend bundle/app/
+        
+        # Copy main repo configuration files
+        cp main-repo/docker-compose.yml bundle/
+        cp main-repo/.env.example bundle/
+        cp main-repo/prepare-env.sh bundle/
+        cp -r main-repo/nginx bundle/
+        
+        # Copy any additional files from main repo
+        cp main-repo/README.md bundle/ || true
+        cp main-repo/LICENSE bundle/ || true
+        
+        # Make scripts executable
+        chmod +x bundle/prepare-env.sh || true
+        
+        # Create version info file
+        echo "Bundle created: $(date)" > bundle/VERSION.txt
+        echo "Git commit: ${{ github.sha }}" >> bundle/VERSION.txt
+        echo "Release tag: ${{ github.event.inputs.release_tag }}" >> bundle/VERSION.txt
+    
+    # Create the tar file
+    - name: Create Tar Bundle
+      run: |
+        cd bundle
+        tar -czf ../application-bundle-${{ github.event.inputs.release_tag }}.tar.gz .
+        cd ..
+        
+        # Create checksum
+        sha256sum application-bundle-${{ github.event.inputs.release_tag }}.tar.gz > application-bundle-${{ github.event.inputs.release_tag }}.tar.gz.sha256
+    
+    # Upload as artifact
+    - name: Upload Bundle as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: application-bundle-${{ github.event.inputs.release_tag }}
+        path: |
+          application-bundle-${{ github.event.inputs.release_tag }}.tar.gz
+          application-bundle-${{ github.event.inputs.release_tag }}.tar.gz.sha256
+        retention-days: 90
+    
+    # Optional: Create a GitHub Release
+    - name: Create GitHub Release
+      if: github.event.inputs.release_tag != 'latest'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.event.inputs.release_tag }}
+        name: Application Bundle ${{ github.event.inputs.release_tag }}
+        body: |
+          CBT Application Bundle containing all components:
+          - CBT-Admin (Administration interface)
+          - CBT-App (Main application)  
+          - CBT-Backend (Slate Local Server)
+          
+          Download and extract the tar.gz file to install.
+        files: |
+          application-bundle-${{ github.event.inputs.release_tag }}.tar.gz
+          application-bundle-${{ github.event.inputs.release_tag }}.tar.gz.sha256
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

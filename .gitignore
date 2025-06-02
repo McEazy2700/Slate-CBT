@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+##### Application Variables #####
+export SCHOOL_NAME="TOSA"
+export SECRET_KEY="mzZOxxSwUQDgSD8sFpS8EdfXmcmo1RDGWH7UMtG2+6E="
+export DEBUG=False
+export API_VERSION="1.0.0"
+export SLATE_BASE_URL="https://api2.slate.ng"
+export BASE_URL="https://tosa.slate.ng"
+export SLATE_URL=https://api2.slate.ng
+
+##### Redis Configuration #####
+export REDIS_DB=0
+export REDIS_PORT=6379
+export REDIS_EXT_PORT=6380
+export REDIS_USER=default
+export REDIS_HOST=redis
+export REDIS_PASSWORD=l0wt3ks_prod
+export REDIS_URL="redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/${REDIS_DB}"
+
+##### Database Container Variables #####
+export DB_PORT=5432
+export HOST_PORT=5433
+export DB_USER="standard"
+export DB_PASSWORD="l0wt3k_prod"
+export DB_NAME="slate_prod_db"
+export DB_HOST=server_db
+export DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+
+##### Backend Container Variables #####
+export BACKEND_PORT=2700
+export CONTAINER_PORT=2700
+export HOST=0.0.0.0
+export SYNC_SERVER_URL="schools/isc/sync/"
+export SERVER_BASE_URL="https://tosa.slate.ng"
+export CACHE_IMAGES=True
+
+##### Deployment Configuration #####
+export CELERY_CONCURRENCY=4
+
+##### Django Configureation #######
+export CREATE_SUPERUSER=true
+export DJANGO_SUPERUSER_USERNAME=admin
+export DJANGO_SUPERUSER_EMAIL=admin@example.com
+.env
+certs/
