@@ -80,7 +80,6 @@ jobs:
           application-bundle-${{ github.event.inputs.release_tag }}.tar.gz.sha256
         retention-days: 90
     
-    # Optional: Create a GitHub Release
     - name: Create GitHub Release
       if: github.event.inputs.release_tag != 'latest'
       uses: softprops/action-gh-release@v1
