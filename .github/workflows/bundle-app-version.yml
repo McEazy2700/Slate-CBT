@@ -45,7 +45,11 @@ jobs:
         # Copy main repo configuration files
         cp main-repo/docker-compose.yml bundle/
         cp main-repo/.env.example bundle/
-        cp main-repo/prepare-env.sh bundle/
+        cp main-repo/prepare-env-and-deploy.sh bundle/
+        cp main-repo/install-dependencies.sh bundle/
+        cp main-repo/save-updates.sh bundle/
+        cp main-repo/check-for-updates.sh bundle/
+        cp main-repo/cbt-manager.sh bundle/
         cp -r main-repo/nginx bundle/
         
         # Copy any additional files from main repo
@@ -53,7 +57,11 @@ jobs:
         cp main-repo/LICENSE bundle/ || true
         
         # Make scripts executable
-        chmod +x bundle/prepare-env.sh || true
+        chmod +x bundle/prepare-env-and-deploy.sh || true
+        chmod +x bundle/install-dependencies.sh || true
+        chmod +x bundle/save-updates.sh || true
+        chmod +x bundle/check-for-updates.sh || true
+        chmod +x bundle/cbt-manager.sh || true
         
         # Create version info file
         echo "Bundle created: $(date)" > bundle/VERSION.txt
