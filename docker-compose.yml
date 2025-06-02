@@ -43,8 +43,11 @@ services:
       retries: 5
 
   backend:
-    image: docker.io/mceazy2700/slate-cbt-backend:1.0.6
+    image: cbt-backend
     container_name: PROD-slate-server-api
+    build:
+      context: ./app/cbt_backend
+      dockerfile: ./deployments/Dockerfile.prod
     env_file:
       - ./.env
     ports:
@@ -64,8 +67,11 @@ services:
       - cbt_network
 
   frontend_app:
-    image: docker.io/mceazy2700/slate-cbt-app:1.0.3
+    image: cbt-app
     container_name: PROD-slate-frontend-app
+    build:
+      context: ./app/cbt_app
+      dockerfile: ./Dockerfile
     restart: always
     env_file:
       - ./.env
@@ -78,8 +84,11 @@ services:
       - cbt_network
 
   frontend_admin:
-    image: docker.io/mceazy2700/slate-cbt-admin:1.0.5
+    image: cbt-admin
     container_name: PROD-slate-frontend-admin
+    build:
+      context: ./app/cbt_admin
+      dockerfile: ./Dockerfile
     restart: always
     env_file:
       - ./.env
